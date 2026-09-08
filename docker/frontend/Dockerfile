@@ -11,8 +11,7 @@ RUN npm ci
 
 COPY frontend .
 
-# Both icon sets, as task prepare:icons would: the <Icon> registry, and the material-symbols subset.
-RUN node editor/scripts/generate-icons.js
+# Generate the icon registry (normally done by task prepare:icons).
 RUN node editor/scripts/generate-icon-registry.mjs
 
 # Defaults match prior behaviour. Supabase values are client-publishable build args.
