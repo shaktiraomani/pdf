@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useViewScopedFiles } from "@app/hooks/tools/shared/useViewScopedFiles";
+import { useFileContext } from "@app/contexts/file/fileHooks";
 import {
   createToolFlow,
   type MiddleStepConfig,
@@ -20,6 +21,7 @@ const AddAttachments = ({
 }: BaseToolProps) => {
   const { t } = useTranslation();
   const selectedFiles = useViewScopedFiles();
+  const { addFiles } = useFileContext();
   const addAttachmentsTips = useAddAttachmentsTips();
 
   const params = useAddAttachmentsParameters();
@@ -88,6 +90,14 @@ const AddAttachments = ({
           parameters={params.parameters}
           onParameterChange={params.updateParameter}
           disabled={endpointLoading}
+          activeFile={selectedFiles[0] || null}
+          onFileUpdated={(updatedFile) => {
+            void addFiles([updatedFile], { selectFiles: true });
+            if (onComplete) {
+              onComplete([updatedFile]);
+            }
+          }}
+          onError={(msg) => onError?.(msg)}
         />
       ),
     });
@@ -105,7 +115,7 @@ const AddAttachments = ({
     steps: getSteps(),
     executeButton: {
       text: t("AddAttachmentsRequest.submit", "Add Attachments"),
-      isVisible: !hasResults,
+      isVisible: false,
       loadingText: t("loading"),
       onClick: handleExecute,
       endpointEnabled: endpointEnabled,
