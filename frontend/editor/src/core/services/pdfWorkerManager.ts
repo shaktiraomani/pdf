@@ -5,11 +5,9 @@
  * and ensuring proper cleanup when operations complete.
  */
 
-import {
-  GlobalWorkerOptions,
-  getDocument,
-  PDFDocumentProxy,
-} from "pdfjs-dist/legacy/build/pdf.mjs";
+import type { PDFDocumentProxy } from "pdfjs-dist/legacy/build/pdf.mjs";
+
+type PdfjsModule = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
 
 class PDFWorkerManager {
   private static instance: PDFWorkerManager;
@@ -17,10 +15,9 @@ class PDFWorkerManager {
   private workerCount = 0;
   private maxWorkers = 10; // Limit concurrent workers
   private isInitialized = false;
+  private pdfjsPromise: Promise<PdfjsModule> | null = null;
 
-  private constructor() {
-    this.initializeWorker();
-  }
+  private constructor() {}
 
   static getInstance(): PDFWorkerManager {
     if (!PDFWorkerManager.instance) {
@@ -30,16 +27,63 @@ class PDFWorkerManager {
   }
 
   /**
-   * Initialize PDF.js worker once globally
+   * Load pdfjs-dist on first use and configure its worker once globally.
+   * The static import would put pdf.js into the initial bundle, which
+   * viewer-first flows must avoid (they run fully on PDFium).
    */
-  private initializeWorker(): void {
+  private loadPdfjs(): Promise<PdfjsModule> {
+    if (!this.pdfjsPromise) {
+      this.pdfjsPromise = import("pdfjs-dist/legacy/build/pdf.mjs").then(
+        (pdfjs) => {
+          this.initializeWorker(pdfjs);
+          return pdfjs;
+        },
+        (error: unknown) => {
+          this.pdfjsPromise = null;
+          throw error;
+        },
+      );
+    }
+    return this.pdfjsPromise;
+  }
+
+  /**
+   * Initialize PDF.js worker configuration once globally
+   */
+  private initializeWorker(pdfjs: PdfjsModule): void {
     if (!this.isInitialized) {
-      GlobalWorkerOptions.workerSrc = new URL(
+      pdfjs.GlobalWorkerOptions.workerSrc = new URL(
         "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
         import.meta.url,
       ).toString();
-      (GlobalWorkerOptions as { docBaseUrl?: string }).docBaseUrl = undefined;
+      (pdfjs.GlobalWorkerOptions as { docBaseUrl?: string }).docBaseUrl =
+        undefined;
       this.isInitialized = true;
+    }
+  }
+
+  /**
+   * Lazily ensure a shared Worker instance exists on workerPort when a document is opened.
+   */
+  private ensureSharedWorkerPort(pdfjs: PdfjsModule): void {
+    if (
+      typeof window !== "undefined" &&
+      "Worker" in window &&
+      !pdfjs.GlobalWorkerOptions.workerPort
+    ) {
+      try {
+        const workerUrl =
+          pdfjs.GlobalWorkerOptions.workerSrc ||
+          new URL(
+            "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
+            import.meta.url,
+          ).toString();
+        pdfjs.GlobalWorkerOptions.workerPort = new Worker(workerUrl, {
+          type: "module",
+        });
+      } catch {
+        // Fall back to workerSrc if new Worker fails (e.g. mock or restricted environment)
+      }
     }
   }
 
@@ -56,6 +100,8 @@ class PDFWorkerManager {
       verbosity?: number;
     } = {},
   ): Promise<PDFDocumentProxy> {
+    const pdfjs = await this.loadPdfjs();
+    this.ensureSharedWorkerPort(pdfjs);
     // Wait if we've hit the worker limit
     if (this.activeDocuments.size >= this.maxWorkers) {
       await this.waitForAvailableWorker();
@@ -73,7 +119,7 @@ class PDFWorkerManager {
       pdfData = data; // Pass through as-is
     }
 
-    const loadingTask = getDocument(
+    const loadingTask = pdfjs.getDocument(
       typeof pdfData === "string"
         ? {
             url: pdfData,
