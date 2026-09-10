@@ -11,8 +11,9 @@ RUN npm ci
 
 COPY frontend .
 
-# Generate material-symbols icon subset (normally done by task prepare:icons).
+# Both icon sets, as task prepare:icons would: the <Icon> registry, and the material-symbols subset.
 RUN node editor/scripts/generate-icons.js
+RUN node editor/scripts/generate-icon-registry.mjs
 
 # Defaults match prior behaviour. Supabase values are client-publishable build args.
 ARG STIRLING_FLAVOR=proprietary

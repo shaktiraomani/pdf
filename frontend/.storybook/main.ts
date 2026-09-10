@@ -1,6 +1,13 @@
 import { resolve } from "node:path";
 import type { StorybookConfig } from "@storybook/react-vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+// By path, not @app/*: this file runs in node, before the aliases exist.
+// @ts-expect-error -- plain .mjs helper, no types
+// oxlint-disable-next-line no-restricted-imports -- config runs before aliases exist
+import { legacyIconsPlugin } from "../editor/src/core/icons/legacyIcons.vite.mjs";
+// @ts-expect-error -- plain .mjs helper, no types
+// oxlint-disable-next-line no-restricted-imports -- config runs before aliases exist
+import { usedIconsPlugin } from "../editor/src/core/icons/usedIcons.vite.mjs";
 
 /**
  * Storybook 9 ships essentials, interactions, and docs as built-ins, so the
@@ -61,6 +68,10 @@ const config: StorybookConfig = {
     };
     config.plugins = config.plugins ?? [];
     config.plugins.push(editorPathAliases());
+    // Reads the audit's "before" glyphs from the icon packages, so none of their artwork is checked in.
+    config.plugins.push(legacyIconsPlugin(resolve(__dirname, "..")));
+    // Scanned at startup rather than committed, so the gallery's "in use" view cannot go stale.
+    config.plugins.push(usedIconsPlugin(resolve(__dirname, "../editor/src")));
     // Worker bundles are a separate Rollup pass and do NOT inherit `plugins`, so
     // without this a worker importing @app/* fails to resolve while the same
     // import works everywhere else. Mirrors editor/vite.config.ts.
