@@ -9,7 +9,6 @@ import { FreePdfEditorsCard } from "@portal/components/billing/FreePdfEditorsCar
 import { PdfsProcessedCard } from "@portal/components/billing/PdfsProcessedCard";
 import { PrepaidCapacityCard } from "@portal/components/billing/PrepaidCapacityCard";
 import { BundleCheckoutModal } from "@portal/components/billing/BundleCheckoutModal";
-import { SpendThisMonthCard } from "@portal/components/billing/SpendThisMonthCard";
 import { SpendLimitCard } from "@portal/components/billing/SpendLimitCard";
 import { PaymentMethodCard } from "@portal/components/billing/PaymentMethodCard";
 import { InvoicesList } from "@portal/components/billing/InvoicesList";
@@ -19,6 +18,12 @@ interface Props {
   /** Instance-local usage not yet synced to SaaS; folded into the PDFs-processed card. */
   unsynced?: LocalUsage | null;
   onWalletChange?: () => void;
+  /**
+   * Whether the spend-limit editor is open, when the host drives it. Lets the Processor row's
+   * "Raise limit" door reach the control that already exists here.
+   */
+  adjusting?: boolean;
+  onAdjustingChange?: (adjusting: boolean) => void;
 }
 
 /**
@@ -39,9 +44,15 @@ export function SubscribedPlanView({
   wallet,
   unsynced,
   onWalletChange,
+  adjusting: controlledAdjusting,
+  onAdjustingChange,
 }: Props) {
   const { t } = useTranslation();
-  const [adjusting, setAdjusting] = useState(false);
+  const [ownAdjusting, setOwnAdjusting] = useState(false);
+  const adjusting = onAdjustingChange
+    ? (controlledAdjusting ?? false)
+    : ownAdjusting;
+  const setAdjusting = onAdjustingChange ?? setOwnAdjusting;
   const [bundleOpen, setBundleOpen] = useState(false);
   const portal = useStripePortal(wallet);
 
@@ -113,8 +124,9 @@ export function SubscribedPlanView({
 
       <PdfsProcessedCard wallet={wallet} unsynced={unsynced} />
 
+      {/* Spend for the period is BillingScreen's ProcessorPlanCard now; what stays here is the
+          limit control, which is interactive and has no equivalent on the shared card. */}
       <div className="portal-billing__spend-row">
-        <SpendThisMonthCard wallet={wallet} />
         <SpendLimitCard
           wallet={wallet}
           onWalletChange={onWalletChange}
