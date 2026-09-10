@@ -37,10 +37,19 @@ vi.mock("@portal/api/integrations", () => ({
   fetchIntegrations: () => fetchIntegrations(),
 }));
 
+const fetchSources = vi.fn();
+vi.mock("@portal/api/sources", () => ({
+  fetchSources: () => fetchSources(),
+}));
+
+vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
+
 const SAVE_CHANGES = "portal.policies.wizard.actions.saveChanges";
 const ENABLE = "portal.policies.wizard.actions.enablePolicy";
 
 const security = POLICY_CATEGORIES.find((c) => c.id === "security")!;
+const routing = POLICY_CATEGORIES.find((c) => c.id === "routing")!;
+const routingConfig = POLICY_CONFIG.routing;
 const securityConfig = POLICY_CONFIG.security;
 const compliance = POLICY_CATEGORIES.find((c) => c.id === "compliance")!;
 const complianceConfig = POLICY_CONFIG.compliance;
@@ -80,9 +89,16 @@ async function submitWizard(saveLabel: string) {
   fireEvent.click(await screen.findByRole("button", { name: saveLabel }));
 }
 
+const routingEntry: CatalogueEntry = {
+  category: routing,
+  config: routingConfig,
+  policy: null,
+};
+
 describe("PolicySetupWizard", () => {
   beforeEach(() => {
     fetchIntegrations.mockResolvedValue([]);
+    fetchSources.mockResolvedValue({ kpis: [], sources: [] });
   });
 
   it("round-trips a saved step's backend params on edit", async () => {
@@ -216,6 +232,28 @@ describe("PolicySetupWizard", () => {
     // Redact carries the preset PII patterns as the backend's listOfText.
     const redact = result.steps[0].parameters as { listOfText?: string };
     expect(redact.listOfText).toBeTruthy();
+  });
+
+  it("seeds routing with the classify step it routes on", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <PolicySetupWizard
+        entry={routingEntry}
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+        onCustomise={vi.fn()}
+      />,
+    );
+    await submitWizard(ENABLE);
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    const result = onSubmit.mock.calls[0][1] as PolicySetupResult;
+    expect(result.steps.map((step) => step.operation)).toEqual([
+      "/api/v1/ai/tools/classify-and-label",
+    ]);
+    // A route with nothing filled in yet is carried through; the backend validator is the gate.
+    expect(result.routingRules).toHaveLength(1);
   });
 
   it("defaults a new security policy to enforcing on export", async () => {
