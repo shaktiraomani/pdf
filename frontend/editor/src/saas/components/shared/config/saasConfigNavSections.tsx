@@ -6,6 +6,7 @@ import {
 } from "@core/components/shared/config/configNavSections";
 import HotkeysSection from "@app/components/shared/config/configSections/HotkeysSection";
 import GeneralSection from "@app/components/shared/config/configSections/GeneralSection";
+import PreferencesSection from "@core/components/shared/config/configSections/preferences/PreferencesSection";
 import PasswordSecurity from "@app/components/shared/config/configSections/PasswordSecurity";
 import ApiKeys from "@app/components/shared/config/configSections/ApiKeys";
 import McpSection from "@app/components/shared/config/configSections/McpSection";
@@ -122,6 +123,10 @@ function appendMcpSection(
   const mcpItem = {
     key: "mcp" as const,
     label: t("config.mcp.navLabel", "MCP Server"),
+    description: t(
+      "config.mcp.description",
+      "Model Context Protocol (MCP) lets AI assistants like Claude use your Stirling PDF tools directly. Connect a client once and your assistant can convert, edit, secure and process documents on your behalf.",
+    ),
     icon: "smart-toy-rounded",
     component: <McpSection />,
   };
@@ -249,7 +254,7 @@ export function createSaasConfigNavSections(
       item.key === "general"
         ? {
             ...item,
-            component: <GeneralSection hideUpdateSection hideAdminBanner />,
+            component: <PreferencesSection hideUpdateSection hideAdminBanner />,
           }
         : item,
     ),
