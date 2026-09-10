@@ -42,6 +42,7 @@ import { createFileSelectors } from "@app/contexts/file/fileSelectors";
 import {
   addFiles,
   addStirlingFileStubs,
+  resyncDiskPaths,
   consumeFiles,
   undoConsumeFiles,
   createFileActions,
@@ -386,6 +387,12 @@ function FileContextInner({
     [],
   );
 
+  const resyncDiskPathsAction = useCallback(
+    (paths: string[]) =>
+      resyncDiskPaths(paths, stateRef, filesRef, lifecycleManager),
+    [],
+  );
+
   // Action creators
   const baseActions = useMemo(() => createFileActions(dispatch), []);
 
@@ -636,6 +643,7 @@ function FileContextInner({
       addFiles: addRawFiles,
       addFilesWithOptions,
       addStirlingFileStubs: addStirlingFileStubsAction,
+      resyncDiskPaths: resyncDiskPathsAction,
       removeFiles: async (fileIds: FileId[], deleteFromStorage?: boolean) => {
         // Remove from memory and cleanup resources
         lifecycleManager.removeFiles(fileIds, stateRef);
@@ -702,6 +710,7 @@ function FileContextInner({
       baseActions,
       addRawFiles,
       addStirlingFileStubsAction,
+      resyncDiskPathsAction,
       lifecycleManager,
       setHasUnsavedChanges,
       consumeFilesWrapper,
