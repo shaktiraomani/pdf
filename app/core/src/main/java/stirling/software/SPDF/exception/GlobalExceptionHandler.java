@@ -356,12 +356,56 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle a document that failed the compliance standard it was checked against.
+     *
+     * @param ex the ComplianceNotMetException
+     * @param request the HTTP servlet request
+     * @return ProblemDetail with HTTP 422 UNPROCESSABLE_ENTITY: the request was understood and the
+     *     service worked, the document simply does not meet the standard
+     */
+    @ExceptionHandler(ComplianceNotMetException.class)
+    public ResponseEntity<ProblemDetail> handleComplianceNotMet(
+            ComplianceNotMetException ex, HttpServletRequest request) {
+        logException("warn", "Compliance", request, ex, ex.getErrorCode());
+
+        String title =
+                getLocalizedMessage(
+                        "error.complianceNotMet.title", ErrorTitles.COMPLIANCE_NOT_MET_DEFAULT);
+        return createProblemDetailResponse(
+                ex, HttpStatus.UNPROCESSABLE_ENTITY, ErrorTypes.COMPLIANCE_NOT_MET, title, request);
+    }
+
+    /**
      * Handle FFmpeg dependency missing errors when media conversion endpoints are invoked.
      *
      * @param ex the FfmpegRequiredException
      * @param request the HTTP servlet request
      * @return ProblemDetail with HTTP 503 SERVICE_UNAVAILABLE
      */
+    /**
+     * Handle PDF/A conversion asked for on a host without Ghostscript.
+     *
+     * @param ex the GhostscriptRequiredException
+     * @param request the HTTP servlet request
+     * @return ProblemDetail with HTTP 503 SERVICE_UNAVAILABLE (missing system dependency)
+     */
+    @ExceptionHandler(GhostscriptRequiredException.class)
+    public ResponseEntity<ProblemDetail> handleGhostscriptRequired(
+            GhostscriptRequiredException ex, HttpServletRequest request) {
+        logException("error", "Ghostscript Required", request, ex, ex.getErrorCode());
+
+        String title =
+                getLocalizedMessage(
+                        "error.ghostscriptRequired.title",
+                        ErrorTitles.GHOSTSCRIPT_REQUIRED_DEFAULT);
+        return createProblemDetailResponse(
+                ex,
+                HttpStatus.SERVICE_UNAVAILABLE,
+                ErrorTypes.GHOSTSCRIPT_REQUIRED,
+                title,
+                request);
+    }
+
     @ExceptionHandler(FfmpegRequiredException.class)
     public ResponseEntity<ProblemDetail> handleFfmpegRequired(
             FfmpegRequiredException ex, HttpServletRequest request) {
@@ -1132,12 +1176,16 @@ public class GlobalExceptionHandler {
             // Delegate to specific BaseAppException handlers
             if (appEx instanceof PdfPasswordException) {
                 return handlePdfPassword((PdfPasswordException) appEx, request);
+            } else if (appEx instanceof ComplianceNotMetException complianceEx) {
+                return handleComplianceNotMet(complianceEx, request);
             } else if (appEx instanceof PdfCorruptedException
                     || appEx instanceof PdfEncryptionException
                     || appEx instanceof OutOfMemoryDpiException) {
                 return handlePdfAndDpiExceptions(appEx, request);
             } else if (appEx instanceof GhostscriptException) {
                 return handleGhostscriptException((GhostscriptException) appEx, request);
+            } else if (appEx instanceof GhostscriptRequiredException ghostscriptEx) {
+                return handleGhostscriptRequired(ghostscriptEx, request);
             } else if (appEx instanceof FfmpegRequiredException) {
                 return handleFfmpegRequired((FfmpegRequiredException) appEx, request);
             } else {
@@ -1440,6 +1488,7 @@ public class GlobalExceptionHandler {
         static final String PDF_PASSWORD = "/errors/pdf-password";
         static final String GHOSTSCRIPT = "/errors/ghostscript";
         static final String FFMPEG_REQUIRED = "/errors/ffmpeg-required";
+        static final String GHOSTSCRIPT_REQUIRED = "/errors/ghostscript-required";
         static final String OUT_OF_MEMORY_DPI = "/errors/out-of-memory-dpi";
         static final String PDF_CORRUPTED = "/errors/pdf-corrupted";
         static final String PDF_ENCRYPTION = "/errors/pdf-encryption";
@@ -1459,6 +1508,7 @@ public class GlobalExceptionHandler {
         static final String NOT_FOUND = "/errors/not-found";
         static final String INVALID_ARGUMENT = "/errors/invalid-argument";
         static final String IO_ERROR = "/errors/io-error";
+        static final String COMPLIANCE_NOT_MET = "/errors/compliance-not-met";
         static final String UNEXPECTED = "/errors/unexpected";
     }
 
@@ -1467,10 +1517,12 @@ public class GlobalExceptionHandler {
         static final String PDF_PASSWORD_DEFAULT = "PDF Password Required";
         static final String GHOSTSCRIPT_DEFAULT = "Ghostscript Processing Error";
         static final String FFMPEG_REQUIRED_DEFAULT = "FFmpeg Required";
+        static final String GHOSTSCRIPT_REQUIRED_DEFAULT = "Ghostscript Required";
         static final String OUT_OF_MEMORY_DPI_DEFAULT = "Insufficient Memory for Image Rendering";
         static final String PDF_CORRUPTED_DEFAULT = "PDF File Corrupted";
         static final String PDF_ENCRYPTION_DEFAULT = "PDF Encryption Error";
         static final String APPLICATION_DEFAULT = "Application Error";
+        static final String COMPLIANCE_NOT_MET_DEFAULT = "Compliance Standard Not Met";
         static final String CBR_FORMAT_DEFAULT = "Invalid CBR File Format";
         static final String CBZ_FORMAT_DEFAULT = "Invalid CBZ File Format";
         static final String EML_FORMAT_DEFAULT = "Invalid EML File Format";

@@ -701,7 +701,23 @@ public class ExceptionUtils {
         return new IOException(message);
     }
 
+    /**
+     * A document failed the compliance standard it was checked against. Carries an error code so
+     * the policy review surface can name the failure instead of recording it as unrecognised.
+     *
+     * @param detail the whole sentence, already naming the standard and the failing rules
+     */
+    public static ComplianceNotMetException createComplianceNotMetException(String detail) {
+        String message = getMessage(ErrorCode.COMPLIANCE_NOT_MET, detail);
+        return new ComplianceNotMetException(message, ErrorCode.COMPLIANCE_NOT_MET.getCode());
+    }
+
     /** Create system requirement exceptions. */
+    public static GhostscriptRequiredException createGhostscriptRequiredException() {
+        String message = getMessage(ErrorCode.GHOSTSCRIPT_REQUIRED);
+        return new GhostscriptRequiredException(message, ErrorCode.GHOSTSCRIPT_REQUIRED.getCode());
+    }
+
     public static FfmpegRequiredException createFfmpegRequiredException() {
         String message = getMessage(ErrorCode.FFMPEG_REQUIRED);
         return new FfmpegRequiredException(message, ErrorCode.FFMPEG_REQUIRED.getCode());
@@ -1206,6 +1222,10 @@ public class ExceptionUtils {
                 "E063",
                 "error.ffmpegRequired",
                 "FFmpeg must be installed to convert PDFs to video. Install FFmpeg and ensure it is available on the system PATH."),
+        GHOSTSCRIPT_REQUIRED(
+                "E064",
+                "error.ghostscriptRequired",
+                "Ghostscript must be installed to convert PDFs to PDF/A. Install Ghostscript and ensure it is available on the system PATH."),
 
         // Validation errors
         INVALID_ARGUMENT("E070", "error.invalidArgument", "Invalid argument ''{0}'': {1}"),
@@ -1215,6 +1235,10 @@ public class ExceptionUtils {
                 "E073",
                 "error.invalidComparator",
                 "Invalid comparator format: only 'greater', 'equal', and 'less' are supported"),
+
+        // Compliance errors. The caller builds the whole sentence: only it knows the standard,
+        // profile and failing rules.
+        COMPLIANCE_NOT_MET("E074", "error.complianceNotMet", "{0}"),
 
         // System errors
         MD5_ALGORITHM("E080", "error.md5Algorithm", "MD5 algorithm not available"),
@@ -1277,7 +1301,21 @@ public class ExceptionUtils {
         }
     }
 
+    /** Exception thrown when a document fails a compliance standard it was checked against. */
+    public static class ComplianceNotMetException extends BaseAppException {
+        public ComplianceNotMetException(String message, String errorCode) {
+            super(message, null, errorCode);
+        }
+    }
+
     /** Exception thrown when FFmpeg is not available on the host system. */
+    /** Thrown when PDF/A conversion is asked for on a host without Ghostscript. */
+    public static class GhostscriptRequiredException extends BaseAppException {
+        public GhostscriptRequiredException(String message, String errorCode) {
+            super(message, null, errorCode);
+        }
+    }
+
     public static class FfmpegRequiredException extends BaseAppException {
         public FfmpegRequiredException(String message, String errorCode) {
             super(message, null, errorCode);

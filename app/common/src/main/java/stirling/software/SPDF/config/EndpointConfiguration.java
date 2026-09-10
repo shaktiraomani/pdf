@@ -403,6 +403,7 @@ public class EndpointConfiguration {
         addEndpointToGroup("Security", "redact");
         addEndpointToGroup("Security", "verify-pdf");
         addEndpointToGroup("Security", "accessibility-report");
+        addEndpointToGroup("Security", "validate-compliance");
         addEndpointToGroup("Security", "sign");
 
         // Adding endpoints to "Other" group
@@ -482,7 +483,6 @@ public class EndpointConfiguration {
         addEndpointToGroup("LibreOffice", "pdf-to-rtf");
         addEndpointToGroup("LibreOffice", "pdf-to-html");
         addEndpointToGroup("LibreOffice", "pdf-to-xml");
-        addEndpointToGroup("LibreOffice", "pdf-to-pdfa");
 
         // Unoconvert
         addEndpointToGroup("Unoconvert", "file-to-pdf");
@@ -539,6 +539,7 @@ public class EndpointConfiguration {
         addEndpointToGroup("Java", "verify-pdf");
         addEndpointToGroup("Java", "pdf-to-ua");
         addEndpointToGroup("Java", "accessibility-report");
+        addEndpointToGroup("Java", "validate-compliance");
         addEndpointToGroup("Java", "flatten");
         addEndpointToGroup("Java", "unlock-pdf-forms");
         addEndpointToGroup("Java", "validate-signature");
@@ -566,6 +567,7 @@ public class EndpointConfiguration {
         addEndpointToGroup("Ghostscript", "crop");
         addEndpointToGroup("Ghostscript", "replace-invert-pdf");
         addEndpointToGroup("Ghostscript", "scanner-effect");
+        addEndpointToGroup("Ghostscript", "pdf-to-pdfa");
         addEndpointToGroup("Ghostscript", "pdf-to-vector");
         addEndpointToGroup("Ghostscript", "vector-to-pdf");
 
@@ -612,6 +614,7 @@ public class EndpointConfiguration {
         addEndpointToGroup("veraPDF", "verify-pdf");
         addEndpointToGroup("veraPDF", "pdf-to-ua");
         addEndpointToGroup("veraPDF", "accessibility-report");
+        addEndpointToGroup("veraPDF", "validate-compliance");
 
         // Pdftohtml dependent endpoints
         addEndpointToGroup("Pdftohtml", "pdf-to-html");
